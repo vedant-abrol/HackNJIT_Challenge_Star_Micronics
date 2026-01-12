@@ -7,7 +7,12 @@ function App() {
   return (
     <div className="App">
       <Header />
-      <Dashboard />
+      <main className="main-content">
+        <Dashboard />
+      </main>
+      <footer className="footer">
+        <p>© 2024 Star Micronics - POS Receipt Data Analysis Platform</p>
+      </footer>
     </div>
   );
 }

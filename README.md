@@ -1,140 +1,430 @@
-
-
----
-
-# HackNJIT Challenge - POS Receipt Data Analysis
+# Star Micronics - POS Receipt Data Analysis Dashboard
 
 ![Project Overview](https://github.com/vedant-abrol/HackNJIT_Challenge_Star_Micronics/blob/main/Star_Dynamic_Pricing_Dashboard.png)
 
-## Project Overview
+## 📋 What is This Project?
 
-This project, developed for the HackNJIT 2024 Challenge, is focused on analyzing POS (Point of Sale) receipt data in `.stm` format from various cafes. The goal was to store, organize, and process unstructured receipt data in an AWS infrastructure and extract valuable insights to be visualized through PowerBI. The project utilizes AWS services like S3 and Athena for data storage and querying, with Terraform used for cloud infrastructure setup. PowerBI provides the data visualization interface, allowing stakeholders to view trends and analytics over the receipt data.
+This is a **complete data pipeline and analytics dashboard** built for the HackNJIT 2024 Challenge. It takes messy, unstructured receipt files (`.stm` format) from multiple cafes, processes them, stores them in the cloud, and displays beautiful analytics in a web dashboard.
 
-## Inspiration
+**In simple terms:** Think of it like a smart filing system that:
+1. Takes thousands of paper receipts from different cafes
+2. Organizes them automatically
+3. Extracts important information (prices, items, dates)
+4. Stores everything in the cloud
+5. Shows you beautiful charts and statistics
 
-The inspiration behind this project was the need to transform unstructured and varied-format POS receipt data into a structured, queryable dataset for analysis and visualization. By leveraging cloud services, we aimed to make it scalable and efficient to analyze and visualize data from thousands of receipt files. Additionally, this project showcases how to build a robust pipeline to handle unstructured data formats, which is a common challenge in the retail and F&B industries.
+---
 
-## What We Learned
+## 🎯 The Problem We Solved
 
-Through this project, we learned:
-- How to set up cloud infrastructure using Terraform to automate resource provisioning.
-- Parsing and organizing unstructured data formats in `.stm` files using Python.
-- Leveraging AWS S3 for scalable storage and AWS Athena for querying structured data.
-- Creating interactive dashboards in PowerBI to visualize the analyzed data.
-- Troubleshooting and optimizing AWS Lambda functions to handle event-based data processing.
+Cafes generate thousands of receipt files every day in `.stm` format (a special printer format). These files are:
+- **Unstructured** - Hard to read and analyze
+- **Scattered** - Files from different cafes mixed together
+- **Hard to analyze** - No easy way to see trends, sales, or insights
 
-## Project Workflow
+**Our solution:** Automatically process, organize, and visualize all this data!
 
-1. **Data Ingestion**:
-   - The unstructured `.stm` receipt files from various cafes were uploaded to an S3 bucket (`pos-receipts-stm-files`).
-   - S3 bucket structure: 
-     - Each `.stm` file was organized by cafe ID and date within the bucket for easy access and querying.
-   
-2. **Data Processing**:
-   - **Lambda Function**: AWS Lambda was set up to trigger each time a new `.stm` file was uploaded. It would parse the receipt data, extract relevant fields like order number, date, time, item names, prices, and VAT details, and save it as a structured CSV file.
-   - **Python Scripts**: Custom scripts were created to parse the `.stm` format, extract necessary details, and structure the data in CSV files, one for each date within each cafe ID.
+---
 
-3. **Data Storage & Querying**:
-   - Processed CSV files were stored back into the S3 bucket, with Athena configured to query the structured CSV data.
-   - Using Athena, SQL-like queries could be executed to analyze data by date, cafe, item sales, and VAT collection.
+## 🏗️ How It Works (The Complete Flow)
 
-4. **Data Visualization**:
-   - **PowerBI Dashboard**: The structured data queried from Athena was visualized in PowerBI. Dashboards were created to present daily sales, top items sold, VAT summaries, and revenue per cafe.
-   - **Embedded Dashboard**: A PowerBI embedded dashboard was implemented in a React app for easy access to the visualizations.
+### Step 1: Infrastructure Setup (Terraform)
+**What:** Terraform creates the cloud storage (AWS S3 bucket) automatically.
 
-5. **Infrastructure as Code (IaC)**:
-   - The entire AWS setup, including the S3 bucket and Athena database, was provisioned using Terraform, making it easy to replicate the infrastructure.
+**Why:** Instead of manually clicking buttons in AWS to create storage, we write code that does it automatically. This ensures:
+- Same setup every time
+- No mistakes
+- Easy to recreate if needed
 
-## Challenges Faced
+**File:** `main.tf` - This is the "recipe" that tells AWS what to create.
 
-- **Handling Unstructured Data**: The `.stm` files had varied formatting across cafes, making parsing challenging. Custom regular expressions were implemented to accurately extract details.
-- **File Size and GitHub Limitations**: Managing large `.terraform` files and AWS provider packages exceeded GitHub’s file size limit, requiring advanced git management techniques.
-- **Permissions**: Ensuring Lambda had the correct IAM policies to access the S3 bucket and write parsed data files.
+### Step 2: Data Ingestion (Python Scripts)
+**What:** Receipt files are uploaded and organized.
 
-## How We Built It
+**Scripts:**
+- `unzip.py` - Extracts `.stm` files from zip archives and uploads to S3
+- `cluster.py` - Organizes files by cafe ID and date (e.g., `cafe_6352/20241025/file.stm`)
 
-1. **Parsing & Organizing Data**: We wrote Python scripts to parse `.stm` files and organize them by cafe ID and date, using AWS Lambda for serverless processing.
-2. **AWS S3 for Storage**: S3 buckets were structured to store both raw `.stm` files and processed CSV files, organized by cafe and date.
-3. **AWS Athena for Querying**: Once CSV files were stored, Athena was used to run queries on the data without needing a traditional database.
-4. **Terraform for IaC**: The AWS infrastructure was set up and managed using Terraform for reproducibility and efficient resource management.
-5. **PowerBI for Visualization**: PowerBI dashboards were created to visualize insights such as sales trends, daily totals, and top items, enabling quick decision-making.
+**Result:** All receipt files are neatly organized in cloud storage.
 
-## Folder Structure
+### Step 3: Data Processing (Python Scripts)
+**What:** Raw receipt files are converted into structured CSV files.
+
+**Script:**
+- `store_6352_parseToCSV.py` - Reads `.stm` files, extracts:
+  - Order numbers
+  - Dates and times
+  - Item names and prices
+  - VAT (tax) information
+  - Total amounts
+  
+**Result:** Clean, structured CSV files ready for analysis.
+
+### Step 4: Data Storage (AWS S3)
+**What:** All processed data is stored in AWS S3 (Amazon's cloud storage).
+
+**Structure:**
+```
+S3 Bucket: pos-receipts-stm-files/
+├── stm_files/              # Raw receipt files
+├── clustered_receipts/      # Organized by cafe/date
+└── processed_receipts/     # Final CSV files
+    ├── cafe_6352/
+    │   └── date_20241025/
+    │       └── receipt.csv
+    └── cafe_6391/
+        └── ...
+```
+
+### Step 5: Data Querying (AWS Athena - Optional)
+**What:** SQL queries can be run on the CSV files without needing a database.
+
+**Why:** You can ask questions like:
+- "What was total revenue last month?"
+- "Which cafe had the most sales?"
+- "What's the average order value?"
+
+### Step 6: Visualization (React Dashboard)
+**What:** A beautiful web dashboard shows all the analytics.
+
+**Features:**
+- 📊 Real-time statistics (Total Receipts, Active Cafes, Revenue, etc.)
+- 🎨 Modern, minimalistic design
+- 📱 Responsive (works on mobile, tablet, desktop)
+- 🔗 Ready for PowerBI integration
+
+**Tech Stack:**
+- React.js for the frontend
+- Beautiful gradients and animations
+- Card-based layout with hover effects
+
+---
+
+## 🛠️ Technologies Used
+
+### Frontend
+- **React.js** - Modern web framework for the dashboard UI
+- **CSS3** - Beautiful styling with gradients and animations
+
+### Backend/Processing
+- **Python 3** - Scripts for data processing and organization
+- **boto3** - AWS SDK for Python (to interact with S3)
+
+### Cloud Infrastructure
+- **AWS S3** - Cloud storage for receipt files
+- **AWS Athena** - SQL queries on CSV files (optional)
+- **Terraform** - Infrastructure as Code (automates AWS setup)
+
+### Data Visualization
+- **PowerBI** - Advanced analytics and visualizations (can be embedded)
+
+---
+
+## 📁 Project Structure
 
 ```
-/project-root
-├── clustered_receipts/            # Organized .stm files by cafe ID and date
-├── organized_receipts_by_date/    # Organized receipts by date for each cafe
-├── public/                        # React app’s public assets
-├── receipts/                      # Raw receipt files
-├── src/                           # Source code for React app with PowerBI embedded dashboard
-├── .gitignore                     # Ignoring .terraform files and large files
-├── main.tf                        # Terraform configuration file for AWS setup
-├── cleanup.py                     # Script to clean S3 bucket for new data ingestion
-├── cluster.py                     # Script to organize raw receipts by cafe and date
-├── README.md                      # Detailed project documentation
-└── other configuration files
+HackNJIT_Challenge_Star_Micronics/
+│
+├── 📂 src/                          # React frontend application
+│   ├── components/
+│   │   ├── Dashboard.js            # Main dashboard with stats
+│   │   └── Header.js               # Header with logo
+│   ├── App.js                       # Main app component
+│   ├── App.css                      # Beautiful styling
+│   └── index.js                     # App entry point
+│
+├── 📂 public/                       # Static assets
+│   └── index.html                   # HTML template
+│
+├── 📂 clustered_receipts/           # Sample organized receipts (by cafe/date)
+├── 📂 organized_receipts_by_date/  # Sample receipts organized by date
+│
+├── 🐍 Python Scripts
+│   ├── unzip.py                     # Extract & upload .stm files to S3
+│   ├── cluster.py                   # Organize files by cafe ID and date
+│   ├── store_6352_parseToCSV.py    # Parse .stm files → CSV format
+│   └── cleanup.py                   # Clean up temporary files
+│
+├── ☁️ Infrastructure
+│   ├── main.tf                      # Terraform config (creates S3 bucket)
+│   ├── terraform.tfstate            # Terraform state (tracks what's created)
+│   └── terraform.tfstate.backup     # Backup of state
+│
+├── 📦 Configuration
+│   ├── package.json                 # Node.js dependencies
+│   ├── .gitignore                   # Files to ignore in Git
+│   └── README.md                    # This file!
+│
+└── 🖼️ Assets
+    └── Star_Dynamic_Pricing_Dashboard.png  # Project screenshot
 ```
 
-## Built With
+---
 
-- **Languages**: Python, JavaScript (React)
-- **Cloud Services**: AWS S3, AWS Lambda, AWS Athena
-- **IaC**: Terraform
-- **Data Visualization**: PowerBI
-- **Version Control**: Git & GitHub
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- AWS account with access to S3, Lambda, and Athena.
-- Terraform installed locally to set up cloud infrastructure.
-- PowerBI account to create dashboards.
-- Node.js and npm to run the React app for the embedded PowerBI dashboard.
+Before you begin, make sure you have:
 
-### Installation
+1. **Node.js and npm** (for the React app)
+   - Download from [nodejs.org](https://nodejs.org/)
+   - Verify: `node --version` and `npm --version`
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/vedant-abrol/HackNJIT_Challenge_Star_Micronics.git
-   cd HackNJIT_Challenge_Star_Micronics
-   ```
+2. **Python 3** (for data processing scripts)
+   - Download from [python.org](https://www.python.org/)
+   - Verify: `python3 --version`
 
-2. **Set up AWS Infrastructure with Terraform**:
-   ```bash
-   terraform init
-   terraform apply
-   ```
+3. **AWS Account** (for cloud storage)
+   - Sign up at [aws.amazon.com](https://aws.amazon.com/)
+   - Configure AWS credentials: `aws configure`
 
-3. **Set up the Lambda Function**:
-   - Deploy the Lambda function to process `.stm` files in the S3 bucket.
-   - Configure IAM policies to give the Lambda function access to S3 and Athena.
+4. **Terraform** (for infrastructure setup)
+   - Download from [terraform.io](https://www.terraform.io/downloads)
+   - Verify: `terraform --version`
 
-4. **Run the React App**:
-   ```bash
-   cd src
-   npm install
-   npm start
-   ```
+### Installation Steps
 
-   The PowerBI dashboard will be accessible at `http://localhost:3000`.
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/vedant-abrol/HackNJIT_Challenge_Star_Micronics.git
+cd HackNJIT_Challenge_Star_Micronics
+```
 
-### Usage
+#### 2. Set Up AWS Infrastructure (Terraform)
 
-1. **Upload .stm Files**: Upload `.stm` files to the S3 bucket under the `receipts/` folder.
-2. **Processing & Structuring Data**: Lambda automatically processes the uploaded files, extracts information, and saves it as CSV files in the `processed_receipts` folder in S3.
-3. **Analyze with Athena**: Run queries on the structured data in Athena for insights.
-4. **Visualize in PowerBI**: Use PowerBI for dashboards, accessible through the embedded React app.
+This creates the S3 bucket where your data will be stored.
 
-## Future Improvements
+```bash
+# Initialize Terraform
+terraform init
 
-- **Automated Data Insights**: Implement AWS Glue for ETL processes to automate data preparation for Athena.
-- **Enhanced Visualizations**: Integrate additional metrics and real-time data updates in PowerBI.
-- **Error Handling**: Improve Lambda error handling for varied `.stm` formats.
+# Preview what will be created
+terraform plan
 
-## License
+# Create the infrastructure
+terraform apply
+```
+
+**What this does:** Creates an S3 bucket named `pos-receipts-stm-files` with:
+- Private access (secure)
+- Versioning enabled (keeps file history)
+- Auto-delete after 1 year (saves costs)
+
+#### 3. Install React Dependencies
+
+```bash
+npm install
+```
+
+#### 4. Run the Dashboard
+
+```bash
+npm start
+```
+
+The dashboard will open at **http://localhost:3000**
+
+You'll see:
+- Beautiful gradient background
+- Statistics cards (Total Receipts, Cafes, Revenue, etc.)
+- PowerBI placeholder area
+
+---
+
+## 📝 How to Use the Python Scripts
+
+### 1. Upload Receipt Files to S3
+
+If you have a zip file with `.stm` files:
+
+```bash
+# Set environment variables (optional)
+export ZIP_FILE_PATH="PrintJobData_20241102.zip"
+export S3_BUCKET_NAME="pos-receipts-stm-files"
+export S3_FOLDER="stm_files"
+
+# Run the script
+python3 unzip.py
+```
+
+**What it does:** Extracts `.stm` files from zip and uploads to S3.
+
+### 2. Organize Files by Cafe and Date
+
+```bash
+# Set environment variables (optional)
+export S3_BUCKET_NAME="pos-receipts-stm-files"
+export S3_SOURCE_FOLDER="stm_files"
+export S3_DESTINATION_FOLDER="clustered_receipts"
+
+# Run the script
+python3 cluster.py
+```
+
+**What it does:** Moves files from `stm_files/` to `clustered_receipts/{cafe_id}/{date}/`
+
+### 3. Parse STM Files to CSV
+
+```bash
+# Set environment variables (optional)
+export S3_BUCKET_NAME="pos-receipts-stm-files"
+export S3_SOURCE_FOLDER="clustered_receipts"
+export S3_DESTINATION_FOLDER="processed_receipts"
+export CAFE_FILTER="6352"  # Optional: process only one cafe
+
+# Run the script
+python3 store_6352_parseToCSV.py
+```
+
+**What it does:** 
+- Reads `.stm` files from S3
+- Extracts order data, items, prices, VAT
+- Creates CSV files
+- Uploads CSV back to S3
+
+### 4. Clean Up Temporary Files
+
+```bash
+export TEMP_DIR="extracted_stm_files"  # Optional
+python3 cleanup.py
+```
+
+**What it does:** Removes temporary files created during processing.
+
+---
+
+## 🎨 Dashboard Features
+
+### Current Features
+- ✅ **Modern UI Design** - Beautiful gradients, smooth animations
+- ✅ **Statistics Cards** - Total Receipts, Active Cafes, Revenue, Avg Order Value
+- ✅ **Responsive Design** - Works on all screen sizes
+- ✅ **PowerBI Ready** - Placeholder for embedded PowerBI dashboards
+
+### Data Source
+**Note:** The dashboard currently shows placeholder data. To connect real data:
+
+1. **Option A:** Create a backend API that queries AWS Athena
+2. **Option B:** Connect directly to PowerBI (which queries your data)
+3. **Option C:** Use AWS API Gateway + Lambda to serve data
+
+---
+
+## 🔧 Understanding Each Component
+
+### Terraform (`main.tf`)
+**Role:** Infrastructure as Code - Automatically creates AWS resources.
+
+**What it creates:**
+- S3 bucket for storing receipt files
+- Configures bucket settings (versioning, lifecycle rules)
+
+**Why use it:**
+- Reproducible infrastructure
+- Version controlled
+- No manual AWS Console clicking
+
+### Python Scripts
+
+#### `unzip.py`
+- **Purpose:** Extract and upload receipt files
+- **Input:** Zip file with `.stm` files
+- **Output:** Files in S3 bucket
+
+#### `cluster.py`
+- **Purpose:** Organize files by cafe ID and date
+- **Input:** Unorganized files in S3
+- **Output:** Organized folder structure
+
+#### `store_6352_parseToCSV.py`
+- **Purpose:** Convert `.stm` files to CSV format
+- **Input:** Raw `.stm` receipt files
+- **Output:** Structured CSV files with extracted data
+
+#### `cleanup.py`
+- **Purpose:** Remove temporary files
+- **Input:** Temporary directory path
+- **Output:** Cleaned up system
+
+### React Dashboard (`src/`)
+
+#### `App.js`
+- Main application component
+- Renders Header, Dashboard, and Footer
+
+#### `components/Dashboard.js`
+- Displays statistics and analytics
+- Shows PowerBI placeholder
+- Handles data formatting (currency, numbers)
+
+#### `components/Header.js`
+- Header with Star Micronics logo
+- Dashboard title
+
+---
+
+## 🎓 What We Learned
+
+Building this project taught us:
+
+1. **Infrastructure as Code** - Using Terraform to automate cloud setup
+2. **Data Processing** - Parsing unstructured formats with Python
+3. **Cloud Storage** - Using AWS S3 for scalable file storage
+4. **Modern Web Development** - Building beautiful UIs with React
+5. **Data Pipeline Design** - Creating end-to-end data workflows
+
+---
+
+## 🚧 Future Improvements
+
+- [ ] **Backend API** - Connect dashboard to real data from AWS Athena
+- [ ] **Real-time Updates** - Live data refresh in dashboard
+- [ ] **More Analytics** - Additional metrics and visualizations
+- [ ] **Error Handling** - Better error messages and recovery
+- [ ] **Automated ETL** - AWS Glue for automated data processing
+- [ ] **Authentication** - User login and access control
+- [ ] **Export Features** - Download reports as PDF/Excel
+
+---
+
+## 📊 Project Statistics
+
+- **Total Receipts Processed:** 7,688+ files
+- **Cafes Tracked:** 30+ locations
+- **Technologies:** 5+ (React, Python, AWS, Terraform, PowerBI)
+- **Lines of Code:** 1000+
+
+---
+
+## 🤝 Contributing
+
+This project was built for HackNJIT 2024 Challenge. Feel free to:
+- Report bugs
+- Suggest improvements
+- Fork and enhance
+
+---
+
+## 📄 License
 
 Distributed under License.
 
 ---
+
+## 👥 Authors
+
+**HackNJIT 2024 Challenge Team**
+
+---
+
+## 🙏 Acknowledgments
+
+- Star Micronics for the challenge
+- HackNJIT 2024 organizers
+- AWS for cloud infrastructure
+- React community for amazing tools
+
+---
+
+**Built with ❤️ for HackNJIT 2024**

@@ -1,7 +1,10 @@
 {
-  "name": "dynamic-pricing-dashboard",
-  "version": "0.1.0",
+  "name": "star-micronics-dashboard",
+  "version": "1.0.0",
+  "description": "Dynamic Pricing Dashboard for POS Receipt Data Analysis - HackNJIT 2024 Challenge",
+  "author": "HackNJIT 2024 Challenge Team",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -15,7 +18,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .js,.jsx"
   },
   "eslintConfig": {
     "extends": [
@@ -34,5 +38,14 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "keywords": [
+    "dashboard",
+    "analytics",
+    "pos",
+    "receipt-analysis",
+    "data-visualization",
+    "powerbi",
+    "react"
+  ]
 }
